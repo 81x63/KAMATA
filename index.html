@@ -1,0 +1,171 @@
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mama</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+          "OrbitControls": "https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js",
+          "open-simplex-noise": "https://cdn.skypack.dev/open-simplex-noise@2.5.0"
+        }
+      }
+    </script>
+    
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'OrbitControls';
+      
+      import { makeNoise3D } from 'open-simplex-noise';
+      const noise3D = makeNoise3D(Math.random());
+      import { makeNoise4D } from 'open-simplex-noise';
+      const noise4D = makeNoise4D(Math.random());
+      
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+      const camera = new THREE.PerspectiveCamera(100, width / height, 0.1, 1000);
+      camera.position.set(0, 0, 850);
+
+      const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#myCanvas') });
+      renderer.setSize(width, height);
+      renderer.setClearColor(0x000000);
+
+      const scene = new THREE.Scene();
+
+      const positions = [];
+      const colors = [];
+
+      const loader = new THREE.TextureLoader();
+
+      loader.load('http://localhost:8080/images/image3.jpeg', function(texture) {
+        const image = texture.image;
+        const width = image.width;
+        const height = image.height;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, width, height);
+
+        const data = context.getImageData(0, 0, width, height).data;
+
+        const positions = [];
+        const colors = []; // パーティクルの色
+        // 画像のピクセルデータからパーティクルを生成
+       for (let i = 0; i < width; i += 5) { // 5ピクセルごとにスキップ
+       for (let j = 0; j < height; j += 5) { // 5ピクセルごとにスキップ
+        const r = data[(j * width + i) * 4];
+        const g = data[(j * width + i) * 4 + 1];
+        const b = data[(j * width + i) * 4 + 2];
+
+        positions.push(i - width / 2, -j + height / 2, 0);
+
+        // 輝度を計算せず、元のRGB値をそのまま使用
+        const color = new THREE.Color(`rgb(${r}, ${g}, ${b})`);
+        colors.push(color.r, color.g, color.b);
+         }
+        }
+        
+        const velocities = [];
+        for (let i = 0; i < positions.length; i += 3) {
+         velocities.push(0, 0, 0);
+       }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3)); // 追加
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        
+        // ここに新しいコードを挿入
+        const material = new THREE.PointsMaterial({ 
+        size: 1, // パーティクルの大きさを調整
+        vertexColors: true,
+        transparent: true, // パーティクルを半透明にする
+        opacity: 0.5 // パーティクルの透明度を調整
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.zoomSpeed = 1.0;
+        controls.rotateSpeed = 1.0;
+
+        let time = 0;
+   
+      const originalPositions = new Float32Array(positions); // 初期位置を保存
+      const originalVelocities = new Float32Array(velocities); // 初期速度を保存
+      let tolerance = 10; // 許容範囲を設定
+      let lastResetTime = new Array(positions.length / 3).fill(Date.now()); // 各パーティクルの最後にリセットした時間を保存
+
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+
+    const positions = particles.geometry.attributes.position.array;
+    const velocities = particles.geometry.attributes.velocity.array;
+
+    let currentTime = Date.now();
+
+    for (let i = 0; i < positions.length; i += 3) {
+      // noise4Dを使用してノイズを生成
+const noiseFactor = noise4D(originalPositions[i] / 0.01,  originalPositions[i + 1] / 0.01, originalPositions[i + 2] / 0.01, time / 22) *22; // 2222から5000に増加
+velocities[i] = Math.min(noiseFactor, 22); // 2222から5000に増加
+velocities[i + 1] = Math.min(noiseFactor, 22); // 2222から5000に増加
+velocities[i + 2] = Math.min(noiseFactor, 22); // 2222から5000に増加
+
+      // パーティクルの位置を更新
+positions[i] += velocities[i] * 2; // 速度を2倍に増加
+positions[i + 1] += velocities[i + 1] * 2; // 速度を2倍に増加
+positions[i + 2] += velocities[i + 2] * 2; // 速度を2倍に増加
+
+      // 最後にリセットした時間から5秒以上経過していたらパーティクルを初期位置に戻す
+if (currentTime - lastResetTime[i/3] >= 5000) {
+  // パーティクルが初期位置に戻るまでの時間（2秒）
+  const resetDuration = 7788;
+  // パーティクルが初期位置に戻るまでの経過時間
+  const elapsedTime = currentTime - lastResetTime[i/3] - 5000;
+
+  // パーティクルの位置を更新（初期位置に向かって徐々に移動）
+  positions[i] += (originalPositions[i] - positions[i]) * (elapsedTime / resetDuration);
+  positions[i + 1] += (originalPositions[i + 1] - positions[i + 1]) * (elapsedTime / resetDuration);
+  positions[i + 2] += (originalPositions[i + 2] - positions[i + 2]) * (elapsedTime / resetDuration);
+
+  // パーティクルが初期位置に戻ったら速度を初期速度に設定し、リセット時間を更新
+  if (elapsedTime >= resetDuration) {
+    velocities[i] = originalVelocities[i];
+    velocities[i + 1] = originalVelocities[i + 1];
+    velocities[i + 2] = originalVelocities[i + 2];
+    lastResetTime[i/3] = currentTime;
+  
+  
+}
+      }
+    }
+
+    particles.geometry.attributes.position.needsUpdate = true;
+    renderer.render(scene, camera);
+  }
+
+  animate();
+      });
+    </script>
+  </body>
+</html>
+
