@@ -4,6 +4,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>mama</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* スクロールバーを非表示にする */
+      }
+    </style>
   </head>
   <body>
     <canvas id="myCanvas"></canvas>
@@ -38,7 +45,7 @@ function onWindowResize(){
 }
 
       const camera = new THREE.PerspectiveCamera(100, width / height, 0.1, 1000);
-      camera.position.set(0, 50, 850);
+      camera.position.set(0, 0, 850);
 
       const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#myCanvas') });
       renderer.setSize(width, height);
